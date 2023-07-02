@@ -82,8 +82,10 @@ map.on(L.Draw.Event.CREATED, function (event) {
 	//layer.bindPopup(`<p>${layer._leaflet_id}</p>`)
 	drawnFeatures.addLayer(layer);
 
+	//console.log(layer)
+
 	// Update the table with the polygon data
-	updatePolygonTable();
+	//updatePolygonTable();
 });
 
 map.on("draw:edited", function (e) {
@@ -95,6 +97,73 @@ map.on("draw:edited", function (e) {
 	})
 
 })
+
+
+/*-----------------------------------------------------------------------*/
+
+map.on('layeradd', function(event) {
+	var addedLayer = event.layer;
+	// Perform actions when a layer is added to the map
+
+	// Check if the added layer is a polygon
+	if (addedLayer instanceof L.Polygon) {
+
+		addPolygonToTable(addedLayer);
+
+		console.log('Layer added:', addedLayer);
+
+	}
+
+	
+  });
+
+
+function addPolygonToTable(layer) {
+
+	var tableBody = document.getElementById('polygonTableBody');
+
+	var row = document.createElement('tr');
+
+	var idCell = document.createElement('td');
+	idCell.textContent = layer._leaflet_id;
+
+	var typeCell = document.createElement('td');
+	typeCell.textContent = "";
+
+	var concentrationCell = document.createElement('td');
+	concentrationCell.textContent = 0;
+
+	var colorCell = document.createElement('td');
+	colorCell.style.backgroundColor = layer.options.color;
+
+	var actionsCell = document.createElement('td');
+	var editButton = document.createElement('button');
+	editButton.textContent = 'Р';
+	editButton.addEventListener('click', function() {
+		openModal(layer._leaflet_id); // Use layer._leaflet_id instead of polygon.id
+	});
+	actionsCell.appendChild(editButton);
+
+	var actionsCell2 = document.createElement('td');
+	var deleteButton = document.createElement('button');
+	deleteButton.textContent = 'В';
+	deleteButton.addEventListener('click', function() {
+		deletePolygon(layer._leaflet_id); // Use layer._leaflet_id instead of polygon.id
+	});
+	actionsCell2.appendChild(deleteButton);
+
+	row.appendChild(idCell);
+	row.appendChild(typeCell);
+	row.appendChild(concentrationCell);
+	row.appendChild(colorCell);
+	row.appendChild(actionsCell);
+	row.appendChild(actionsCell2);
+
+	tableBody.appendChild(row);
+}
+
+/*-----------------------------------------------------------------------*/
+
 
 function updatePolygonTable() {
 	var tableBody = document.getElementById('polygonTableBody');
@@ -144,38 +213,31 @@ function updatePolygonTable() {
 }
 
 function openModal(polygonId) {
-
-	var polygon = drawnPolygons.find(function (p) {
-		return p.id === polygonId;
+	var polygon = drawnPolygons.find(function(p) {
+		return p.layer._leaflet_id === polygonId;
 	});
 
 	if (polygon) {
-
 		var myModal = new bootstrap.Modal(document.getElementById('staticBackdrop'));
 		myModal.show();
 
-		//update ID to track it in modal window
+		// update ID to track it in modal window
 		poligonIdEdit = polygonId;
-
 	}
-
 }
 
 function deletePolygon(polygonId) {
-
-	var polygon = drawnPolygons.find(function (p) {
-		return p.id === polygonId;
+	var index = drawnPolygons.findIndex(function(p) {
+		return p.layer._leaflet_id === polygonId;
 	});
 
-	if (polygon) {
-
+	if (index !== -1) {
+		var polygon = drawnPolygons[index];
 		polygon.layer.remove();
-		drawnPolygons.splice(polygonId, 1);
+		drawnPolygons.splice(index, 1);
 
 		updatePolygonTable();
-
 	}
-
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -199,8 +261,8 @@ document.addEventListener('DOMContentLoaded', function () {
 function saveChanges() {
 	// Perform your save operation here
 
-	var polygon = drawnPolygons.find(function (p) {
-		return p.id === poligonIdEdit;
+	var polygon = drawnPolygons.find(function(p) {
+		return p.layer._leaflet_id === polygonId;
 	});
 
 	if (polygon) {
@@ -239,13 +301,10 @@ function saveChanges() {
 	var modal = bootstrap.Modal.getInstance(modalElement);
 	modal.hide();
 
-	poligonIdEdit = -1;
 }
 
 function cancelChanges() {
 	var modalElement = document.getElementById("staticBackdrop");
 	var modal = bootstrap.Modal.getInstance(modalElement);
 	modal.hide();
-
-	poligonIdEdit = -1;
 }
