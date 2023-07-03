@@ -1,12 +1,8 @@
+//global vars
+var editLayerCustom;
+
 // Initialize the map
 var map = L.map('map').setView([49.83754, 24.031219], 10);
-
-// After initializing the Leaflet map
-var drawnPolygons = []; // Array to store drawn polygons
-var polygonIdCounter = 1; // Counter variable for polygon IDs
-
-//for edit data
-var poligonIdEdit = -1;
 
 // Add the OpenStreetMap tiles
 var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -26,18 +22,13 @@ var drawControl = new L.Control.Draw({
 	// position: "topright",
 	edit: {
 		featureGroup: drawnFeatures,
-		remove: false
+		remove: true
 	},
 	draw: {
 		polygon: {
 			shapeOptions: {
 				color: 'purple'
 			},
-			//  allowIntersection: false,
-			//  drawError: {
-			//   color: 'orange',
-			//   timeout: 1000
-			//  },
 		},
 		polyline: {
 			shapeOptions: {
@@ -63,29 +54,12 @@ map.addControl(drawControl);
 map.on(L.Draw.Event.CREATED, function (event) {
 	var layer = event.layer;
 	var polygon = layer.toGeoJSON(); // Convert the drawn polygon to GeoJSON format
-	//var polygonName = prompt("Enter polygon name:"); // Prompt the user to enter a name for the polygon
-
-	// Assign a unique ID to the polygon
-	var polygonId = polygonIdCounter;
-	polygonIdCounter++;
-
-	// Store the polygon data in the drawnPolygons array
-	drawnPolygons.push({
-		id: polygonId,
-		name: "-",
-		concentration: 0,
-		color: "purple",
-		layer
-	});
 
 	layer.bindPopup(`<p>${JSON.stringify(layer.toGeoJSON())}</p>`)
-	//layer.bindPopup(`<p>${layer._leaflet_id}</p>`)
 	drawnFeatures.addLayer(layer);
 
-	//console.log(layer)
-
 	// Update the table with the polygon data
-	//updatePolygonTable();
+	updatePolygonTable();
 });
 
 map.on("draw:edited", function (e) {
@@ -98,146 +72,72 @@ map.on("draw:edited", function (e) {
 
 })
 
-
-/*-----------------------------------------------------------------------*/
-
-map.on('layeradd', function(event) {
-	var addedLayer = event.layer;
-	// Perform actions when a layer is added to the map
-
-	// Check if the added layer is a polygon
-	if (addedLayer instanceof L.Polygon) {
-
-		addPolygonToTable(addedLayer);
-
-		console.log('Layer added:', addedLayer);
-
-	}
-
-	
-  });
-
-
-function addPolygonToTable(layer) {
-
-	var tableBody = document.getElementById('polygonTableBody');
-
-	var row = document.createElement('tr');
-
-	var idCell = document.createElement('td');
-	idCell.textContent = layer._leaflet_id;
-
-	var typeCell = document.createElement('td');
-	typeCell.textContent = "";
-
-	var concentrationCell = document.createElement('td');
-	concentrationCell.textContent = 0;
-
-	var colorCell = document.createElement('td');
-	colorCell.style.backgroundColor = layer.options.color;
-
-	var actionsCell = document.createElement('td');
-	var editButton = document.createElement('button');
-	editButton.textContent = 'Р';
-	editButton.addEventListener('click', function() {
-		openModal(layer._leaflet_id); // Use layer._leaflet_id instead of polygon.id
-	});
-	actionsCell.appendChild(editButton);
-
-	var actionsCell2 = document.createElement('td');
-	var deleteButton = document.createElement('button');
-	deleteButton.textContent = 'В';
-	deleteButton.addEventListener('click', function() {
-		deletePolygon(layer._leaflet_id); // Use layer._leaflet_id instead of polygon.id
-	});
-	actionsCell2.appendChild(deleteButton);
-
-	row.appendChild(idCell);
-	row.appendChild(typeCell);
-	row.appendChild(concentrationCell);
-	row.appendChild(colorCell);
-	row.appendChild(actionsCell);
-	row.appendChild(actionsCell2);
-
-	tableBody.appendChild(row);
-}
-
-/*-----------------------------------------------------------------------*/
-
-
 function updatePolygonTable() {
+
 	var tableBody = document.getElementById('polygonTableBody');
 	tableBody.innerHTML = ''; // Clear the table body before updating
 
 	// Loop through the drawnPolygons array and populate the table rows
-	drawnPolygons.forEach(function (polygon) {
-		var row = document.createElement('tr');
+	map.eachLayer(function(layer) {
 
-		var idCell = document.createElement('td');
-		idCell.textContent = polygon.id;
+		if (layer instanceof L.Polygon) { 
+			var row = document.createElement('tr');
 
-		var typeCell = document.createElement('td');
-		typeCell.textContent = polygon.name;
+			var idCell = document.createElement('td');
+			idCell.textContent = layer._leaflet_id;
+		
+			var geojsonString = JSON.stringify(layer.toGeoJSON());
+			var geojson = JSON.parse(geojsonString);
 
-		var concentrationCell = document.createElement('td');
-		concentrationCell.textContent = polygon.concentration;
-
-		var colorCell = document.createElement('td');
-		colorCell.style.backgroundColor = polygon.layer.options.color;
-
-		var actionsCell = document.createElement('td');
-		var editButton = document.createElement('button');
-		editButton.textContent = 'Ред.';
-		editButton.addEventListener('click', function () {
-			openModal(polygon.id);
-		});
-		actionsCell.appendChild(editButton);
-
-		var actionsCell2 = document.createElement('td'); // Use a different variable name
-		var deleteButton = document.createElement('button');
-		deleteButton.textContent = 'Вид.';
-		deleteButton.addEventListener('click', function () {
-			deletePolygon(polygon.id);
-		});
-		actionsCell2.appendChild(deleteButton); // Use the correct variable name here
-
-		row.appendChild(idCell);
-		row.appendChild(typeCell);
-		row.appendChild(concentrationCell);
-		row.appendChild(colorCell);
-		row.appendChild(actionsCell);
-		row.appendChild(actionsCell2);
-
-		tableBody.appendChild(row);
+			var typeCell = document.createElement('td');
+			typeCell.textContent = geojson.properties.name;
+		
+			var concentrationCell = document.createElement('td');
+			concentrationCell.textContent = geojson.properties.concentration;
+		
+			var colorCell = document.createElement('td');
+			colorCell.style.backgroundColor = layer.options.color;
+		
+			var actionsCell = document.createElement('td');
+			var editButton = document.createElement('button');
+			editButton.textContent = '✎';
+			editButton.addEventListener('click', function() {
+				openModal(layer); // Use layer._leaflet_id instead of polygon.id
+			});
+			actionsCell.appendChild(editButton);
+		
+			var actionsCell2 = document.createElement('td');
+			var deleteButton = document.createElement('button');
+			deleteButton.textContent = '🗑';
+			deleteButton.addEventListener('click', function() {
+				deletePolygon(layer); // Use layer._leaflet_id instead of polygon.id
+			});
+			actionsCell2.appendChild(deleteButton);
+		
+			row.appendChild(idCell);
+			row.appendChild(typeCell);
+			row.appendChild(concentrationCell);
+			row.appendChild(colorCell);
+			row.appendChild(actionsCell);
+			row.appendChild(actionsCell2);
+		
+			tableBody.appendChild(row);
+		}
 	});
 }
 
-function openModal(polygonId) {
-	var polygon = drawnPolygons.find(function(p) {
-		return p.layer._leaflet_id === polygonId;
-	});
+function openModal(polygon) {
+	//write ID to global variable
+	editLayerCustom = polygon;
 
-	if (polygon) {
-		var myModal = new bootstrap.Modal(document.getElementById('staticBackdrop'));
-		myModal.show();
+	var myModal = new bootstrap.Modal(document.getElementById('staticBackdrop'));
+	myModal.show();
 
-		// update ID to track it in modal window
-		poligonIdEdit = polygonId;
-	}
 }
 
-function deletePolygon(polygonId) {
-	var index = drawnPolygons.findIndex(function(p) {
-		return p.layer._leaflet_id === polygonId;
-	});
-
-	if (index !== -1) {
-		var polygon = drawnPolygons[index];
-		polygon.layer.remove();
-		drawnPolygons.splice(index, 1);
-
-		updatePolygonTable();
-	}
+function deletePolygon(polygon) {
+	polygon.remove();
+	updatePolygonTable();
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -259,43 +159,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Function to be executed when the "Save" button is clicked
 function saveChanges() {
-	// Perform your save operation here
 
-	var polygon = drawnPolygons.find(function(p) {
-		return p.layer._leaflet_id === polygonId;
+	map.eachLayer(function(layer) {
+		if (layer instanceof L.Polygon && layer._leaflet_id === editLayerCustom._leaflet_id) {
+			
+			var e = document.getElementById("inputTypeDanger");
+			var type = e.options[e.selectedIndex].text;
+			
+			var b = document.getElementById("concentrationInput");
+			var value = b.value;
+			
+			var c = document.getElementById("colorInput");
+			var newColor = c.value;
+
+			feature = layer.feature = layer.feature || {};
+			feature.type = feature.type || "Feature"; // Initialize feature.type
+    		var props = feature.properties = feature.properties || {}; // Initialize feature.properties
+
+			props.name = type;
+			props.concentration = value;
+			
+			layer.setStyle({ color: newColor });
+			layer.redraw();
+			layer.bindPopup(`<p>${JSON.stringify(layer.toGeoJSON())}</p>`);
+			
+			updatePolygonTable();
+		}
 	});
-
-	if (polygon) {
-
-		var e = document.getElementById("inputTypeDanger");
-		var type = e.options[e.selectedIndex].text;
-
-		var b = document.getElementById("concentrationInput");
-		var value = b.value;
-
-		var c = document.getElementById("colorInput");
-		var newColor = c.value;
-
-		polygon.name = type;
-		polygon.layer.name = type + " " + value;
-		polygon.concentration = value;
-		//polygon.layer.options.color = color;
-		polygon.layer.setStyle({ color: newColor });
-
-		
-
-		polygon.color = newColor;
-
-		polygon.layer.redraw();
-
-		//polygon.layer.bindPopup(`<p>${polygon.layer.name}</p>`)
-		polygon.layer.bindPopup(`<p>${polygon.layer.name}<br>${JSON.stringify(polygon.layer.toGeoJSON())}</p>`);
-
-
-		updatePolygonTable();
-
-
-	}
 
 	var modalElement = document.getElementById("staticBackdrop");
 	var modal = bootstrap.Modal.getInstance(modalElement);
