@@ -96,11 +96,13 @@ function updatePolygonTable() {
 			concentrationCell.textContent = geojson.properties.concentration;
 		
 			var colorCell = document.createElement('td');
+			colorCell.classList.add('colorCell');
 			colorCell.style.backgroundColor = layer.options.color;
 		
 			var actionsCell = document.createElement('td');
 			var editButton = document.createElement('button');
 			editButton.textContent = '✎';
+			editButton.classList.add('button-no-border');
 			editButton.addEventListener('click', function() {
 				openModal(layer); // Use layer._leaflet_id instead of polygon.id
 			});
@@ -109,17 +111,22 @@ function updatePolygonTable() {
 			var actionsCell2 = document.createElement('td');
 			var deleteButton = document.createElement('button');
 			deleteButton.textContent = '🗑';
+			deleteButton.classList.add('button-no-border');
 			deleteButton.addEventListener('click', function() {
 				deletePolygon(layer); // Use layer._leaflet_id instead of polygon.id
 			});
 			actionsCell2.appendChild(deleteButton);
 		
+			row.style.fontSize = '12px';
+
 			row.appendChild(idCell);
 			row.appendChild(typeCell);
 			row.appendChild(concentrationCell);
 			row.appendChild(colorCell);
 			row.appendChild(actionsCell);
 			row.appendChild(actionsCell2);
+
+			
 		
 			tableBody.appendChild(row);
 		}

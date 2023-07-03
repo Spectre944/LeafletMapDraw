@@ -1,0 +1,16 @@
+.button-no-border {
+    border: none;
+    background-color: transparent;
+    padding: 0;
+}
+
+tr {
+    font-size: 12px;
+    vertical-align: middle;
+    text-align:center;
+}
+
+.colorCell { 
+    margin: 40px;
+    border-radius: 8px;
+}
