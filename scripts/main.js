@@ -188,7 +188,7 @@ function saveChanges() {
 			
 			layer.setStyle({ color: newColor });
 			layer.redraw();
-			layer.bindPopup(`<p>${JSON.stringify(layer.toGeoJSON())}</p>`);
+			layer.bindPopup(`<p>Назва речовини та концетрація:<br>${type} : ${value} <br>${JSON.stringify(layer.toGeoJSON())}</p>`);
 			
 			updatePolygonTable();
 		}
