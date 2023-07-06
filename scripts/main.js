@@ -1,6 +1,11 @@
 //global vars
 var editLayerCustom;
 
+// Get a reference to the button element
+var button = document.getElementById("SaveLayersBtn");
+
+
+
 // Initialize the map
 var map = L.map('map').setView([49.83754, 24.031219], 10);
 
@@ -126,9 +131,11 @@ function updatePolygonTable() {
 			row.appendChild(actionsCell);
 			row.appendChild(actionsCell2);
 
-			
-		
 			tableBody.appendChild(row);
+		}
+
+		if(layer instanceof L.Circle){
+			console.log(layer.toGeoJSON());
 		}
 	});
 }
@@ -188,7 +195,7 @@ function saveChanges() {
 			
 			layer.setStyle({ color: newColor });
 			layer.redraw();
-			layer.bindPopup(`<p>Назва речовини та концетрація:<br>${type} : ${value} <br>${JSON.stringify(layer.toGeoJSON())}</p>`);
+			layer.bindPopup(`<p>Тип небезпеки: ${type}<br>Концетрація: ${value}<br>${JSON.stringify(layer.toGeoJSON())}</p>`);
 			
 			updatePolygonTable();
 		}
@@ -204,4 +211,30 @@ function cancelChanges() {
 	var modalElement = document.getElementById("staticBackdrop");
 	var modal = bootstrap.Modal.getInstance(modalElement);
 	modal.hide();
+}
+
+// Attach an event listener to the button
+button.addEventListener("click", function() {
+	// Perform the desired action here
+	console.log("Button clicked!");
+	download("321", "1", 0 )
+});
+
+// Function to download data to a file
+function download(data, filename, type) {
+    var file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        var a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
 }
