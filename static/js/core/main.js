@@ -1,6 +1,16 @@
 //global vars
 var editLayerCustom;
 
+var marker;
+var polyline;
+
+// Set a custom icon for the marker
+carIcon = L.icon({
+	iconUrl: './static/img/car-front-fill.svg',
+	iconSize: [32, 32], // Set the size of the icon
+});
+
+
 // Get a reference to the button element
 var buttonSaveLocal = document.getElementById("SaveLayersBtn");
 var buttonLoadlLocal = document.getElementById("LoadLayersBtn");
@@ -51,47 +61,57 @@ map.addControl(drawControl);
 map.on(L.Draw.Event.CREATED, function (event) {
 	var layer = event.layer;
 
-	//Polygon adding
-	layer.bindPopup(`<p>${JSON.stringify(layer.toGeoJSON())}</p>`)
+	// Polygon adding
+	layer.bindPopup(`<p>${JSON.stringify(layer.toGeoJSON())}</p>`);
 	drawnFeatures.addLayer(layer);
 
-	//Marker Movement
+	// Marker Movement
 	if (layer instanceof L.Marker) {
-		if(markerCoordinates == ""){
-			markerCoordinates = layer.getLatLng();
-			console.log(markerCoordinates);
-		}
+		if (!marker) {
+			marker = layer;
+			markerCoordinates = marker.getLatLng();
+		} else {
+		// Draw the polyline
+		polyline = L.polyline([markerCoordinates, layer.getLatLng()], { color: 'red' }).addTo(map);
 
-		drawPath(markerCoordinates, layer.getLatLng());
-    }
+		// Animate the marker along the polyline
+		animateMarkerAlongPolyline(marker, polyline);
+		}
+	}
 
 	// Update the table with the polygon data
 	updatePolygonTable();
 });
 
-function drawPath(firstPos, secondPos) {
-	const line = L.polyline([firstPos, firstPos], { color: 'red' }).addTo(map);
+function animateMarkerAlongPolyline(marker, polyline) {
+	const latLngs = polyline.getLatLngs();
+	const duration = 5000; // Animation duration in milliseconds
+	const steps = 100; // Number of steps for the animation
 
-	const steps = 100; // Number of steps to complete the movement
+	const latDiff = (latLngs[1].lat - latLngs[0].lat) / steps;
+	const lngDiff = (latLngs[1].lng - latLngs[0].lng) / steps;
+
 	let currentStep = 0;
-
-	const latDiff = (secondPos.lat - firstPos.lat) / steps;
-	const lngDiff = (secondPos.lng - firstPos.lng) / steps;
-
 	const interval = setInterval(() => {
-		if (currentStep < steps) {
-		const newLat = firstPos.lat + latDiff * currentStep;
-		const newLng = firstPos.lng + lngDiff * currentStep;
+		if (currentStep <= steps) {
+		const newLat = latLngs[0].lat + latDiff * currentStep;
+		const newLng = latLngs[0].lng + lngDiff * currentStep;
 
-		line.addLatLng([newLat, newLng]);
-		currentStep++;
+		marker.setLatLng([newLat, newLng]);
+			currentStep++;
 		} else {
 			clearInterval(interval); // Stop the interval when the movement is complete
+			markerCoordinates = marker.getLatLng(); // Update the markerCoordinates at the end
 		}
-	}, 100); // Adjust the interval duration to control the speed of movement
+}, duration / steps);
 
-	//Update position
-	markerCoordinates = secondPos;
+	marker.setIcon(carIcon);
+
+	marker.on('moveend', function () {
+		polyline.addLatLng(marker.getLatLng());
+		
+	});
+
 }
 
 map.on("draw:edited", function (e) {
