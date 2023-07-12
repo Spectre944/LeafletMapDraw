@@ -1,7 +1,8 @@
 //global vars
 var editLayerCustom;
 
-var marker;
+var markerP1, markerP2;
+var stopMove, isMoving;
 var polyline;
 
 // Set a custom icon for the marker
@@ -73,23 +74,59 @@ map.on(L.Draw.Event.CREATED, function (event) {
 
 	// Marker Movement
 	if (layer instanceof L.Marker) {
-		if (!marker) {
-			marker = layer;
-			marker.setIcon(carIcon);
-			markerCoordinates = marker.getLatLng();
+		if(!markerP1 || markerP1 == markerP2){
+			markerP1 = layer;
 		} else {
-		// Draw the polyline
-		layer.setIcon(customMarkerIcon);
-		polyline = L.polyline([markerCoordinates, layer.getLatLng()], { color: 'red' }).addTo(map);
+			markerP2 = layer;
+			polyline = L.polyline([markerP1.getLatLng(), markerP1.getLatLng()], { color: 'red' }).addTo(map);
 
-		// Animate the marker along the polyline
-		animateMarkerAlongPolyline(marker, polyline);
+			if(isMoving == true){
+				console.log("New marker while moving");
+			}
+			else{
+				movingProcess(markerP1, markerP2);
+			}
 		}
+		
 	}
 
 	// Update the table with the polygon data
 	updatePolygonTable();
 });
+
+function movingProcess(markerP1, markerP2){
+	
+	markerP1.setIcon(carIcon);
+
+	markerCoordinates = markerP1.getLatLng();
+
+	const duration = 10000; // Animation duration in milliseconds
+	const steps = 100; // Number of steps for the animation
+
+	const latDiff = (markerP2.getLatLng().lat - markerP1.getLatLng().lat) / steps;
+	const lngDiff = (markerP2.getLatLng().lng - markerP1.getLatLng().lng) / steps;
+
+	let currentStep = 0;
+
+	const interval = setInterval(() => {
+		if (currentStep <= steps) {
+
+			const newLat = markerCoordinates.lat + latDiff * currentStep;
+			const newLng = markerCoordinates.lng + lngDiff * currentStep;
+
+			markerP1.setLatLng([newLat, newLng]);
+			polyline.addLatLng(markerP1.getLatLng());
+			currentStep++;
+			isMoving = true;
+
+		} else {
+			clearInterval(interval); // Stop the interval when the movement is complete
+			markerCoordinates = markerP1.getLatLng(); // Update the markerCoordinates at the end
+			markerP2.setIcon(customMarkerIcon);
+			isMoving = false;
+		}
+	}, duration / steps);
+}
 
 function animateMarkerAlongPolyline(marker, polyline) {
 	const latLngs = polyline.getLatLngs();
@@ -107,6 +144,7 @@ function animateMarkerAlongPolyline(marker, polyline) {
 
 		marker.setLatLng([newLat, newLng]);
 			currentStep++;
+			
 		} else {
 			clearInterval(interval); // Stop the interval when the movement is complete
 			markerCoordinates = marker.getLatLng(); // Update the markerCoordinates at the end
