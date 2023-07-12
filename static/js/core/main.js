@@ -10,6 +10,12 @@ carIcon = L.icon({
 	iconSize: [32, 32], // Set the size of the icon
 });
 
+// Set a custom icon for the marker
+customMarkerIcon = L.icon({
+	iconUrl: './static/img/dot.svg',
+	iconSize: [32, 32], // Set the size of the icon
+});
+
 
 // Get a reference to the button element
 var buttonSaveLocal = document.getElementById("SaveLayersBtn");
@@ -69,9 +75,11 @@ map.on(L.Draw.Event.CREATED, function (event) {
 	if (layer instanceof L.Marker) {
 		if (!marker) {
 			marker = layer;
+			marker.setIcon(carIcon);
 			markerCoordinates = marker.getLatLng();
 		} else {
 		// Draw the polyline
+		layer.setIcon(customMarkerIcon);
 		polyline = L.polyline([markerCoordinates, layer.getLatLng()], { color: 'red' }).addTo(map);
 
 		// Animate the marker along the polyline
