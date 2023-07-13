@@ -24,6 +24,24 @@ def pageSettings():
     return render_template('settings.html')
 
 #------------------------------------------------------------------------
+# Обработчик для приёма координат
+@app.route('/get-coordinates', methods=['POST'])
+def get_coordinates():
+    try:
+        currentCoordinates = request.get_json()
+        
+        print(currentCoordinates)
+
+        response = {'message': 'Слои сохранены на сервере.'}
+        return jsonify(response), 200
+    
+    except Exception as e:
+        # Вывод сообщения об ошибке в консоль или логи сервера
+        print('Ошибка при получении координат', str(e))
+        
+        response = {'message': 'Ошибка сохранения слоев на сервере.', 'error': str(e)}
+        return jsonify(response), 500
+
 # Обработчик для сохранения слоев
 @app.route('/save-layers', methods=['POST'])
 def save_layers():
@@ -52,6 +70,7 @@ def save_layers():
         
         response = {'message': 'Ошибка сохранения слоев на сервере.', 'error': str(e)}
         return jsonify(response), 500
+
 
 
 if __name__ == '__main__':

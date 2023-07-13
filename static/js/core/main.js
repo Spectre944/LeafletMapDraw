@@ -1,15 +1,27 @@
 //global vars
 var editLayerCustom;
 
-var markerP1, markerP2;
-var stopMove, isMoving;
-var polyline;
+var markerP1 = null;
+var markerP2 = null;
+var markerText = null;
+var polyline = null;
+var isMoving = false;
+
 
 // Set a custom icon for the marker
 carIcon = L.icon({
 	iconUrl: './static/img/car-front-fill.svg',
 	iconSize: [32, 32], // Set the size of the icon
 });
+
+carText = L.divIcon({
+	className: 'car-text',
+	html: '',
+	iconSize: [75, 50], // Set the size of the text container
+	iconAnchor: [25, -10], // Position the text container relative to the marker
+});
+
+
 
 // Set a custom icon for the marker
 customMarkerIcon = L.icon({
@@ -74,90 +86,111 @@ map.on(L.Draw.Event.CREATED, function (event) {
 
 	// Marker Movement
 	if (layer instanceof L.Marker) {
-		if(!markerP1 || markerP1 == markerP2){
+		// Marker Movement
+		if (!markerP1 || markerP1 === markerP2) {
 			markerP1 = layer;
+			markerP1.setIcon(carIcon);
+			// Create the marker for the text
+			markerText = L.marker(layer.getLatLng(), { icon: carText }).addTo(map);
 		} else {
-			markerP2 = layer;
-			polyline = L.polyline([markerP1.getLatLng(), markerP1.getLatLng()], { color: 'red' }).addTo(map);
-
-			if(isMoving == true){
-				console.log("New marker while moving");
-			}
-			else{
-				movingProcess(markerP1, markerP2);
+			if (isMoving) {
+				// If a marker is already moving, stop its movement and update the destination marker
+				stopMoving();
+				markerP2 = layer;
+				startMoving();
+			} else {
+				markerP2 = layer;
+				startMoving();
 			}
 		}
-		
 	}
 
 	// Update the table with the polygon data
 	updatePolygonTable();
 });
 
-function movingProcess(markerP1, markerP2){
-	
-	markerP1.setIcon(carIcon);
+function startMoving() {
+	polyline = L.polyline([markerP1.getLatLng(), markerP1.getLatLng()], { color: 'red' }).addTo(map);
+	isMoving = true;
+	movingProcess(markerP1, markerP2);
+}
 
+function stopMoving() {
+	clearInterval(interval); // Stop the movement interval
+	isMoving = false;
+	markerP2.setLatLng(markerP1.getLatLng());
+	markerP2.setIcon(customMarkerIcon);
+}
+
+function getSpeed(P1, P2, time) {
+	// Calculate the distance between P1 and P2 using the haversine formula
+	const R = 6371; // Radius of the Earth in kilometers
+	const lat1 = P1.getLatLng().lat;
+	const lon1 = P1.getLatLng().lng;
+	const lat2 = P2.getLatLng().lat;
+	const lon2 = P2.getLatLng().lng;
+
+	const dLat = (lat2 - lat1) * (Math.PI / 180);
+	const dLon = (lon2 - lon1) * (Math.PI / 180);
+
+	const a =
+	Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+	Math.cos(lat1 * (Math.PI / 180)) *
+		Math.cos(lat2 * (Math.PI / 180)) *
+		Math.sin(dLon / 2) *
+		Math.sin(dLon / 2);
+
+	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+	const distance = R * c;
+
+	// Calculate speed in kilometers per hour
+	const speed = Math.floor(distance / ((time / 1000) / 3600));
+
+	return speed;
+}
+
+// Update the text of the custom icon
+function updateText(text) {
+	const carText = document.querySelector('.car-text');
+	if (carText) {
+		carText.textContent = text;
+		carText.style.fontWeight = 'bold';
+		carText.style.fontSize = '14px'
+	}
+}
+
+function movingProcess(markerP1, markerP2) {
 	markerCoordinates = markerP1.getLatLng();
 
-	const duration = 10000; // Animation duration in milliseconds
+	const duration = 30000; // Animation duration in milliseconds
 	const steps = 100; // Number of steps for the animation
 
 	const latDiff = (markerP2.getLatLng().lat - markerP1.getLatLng().lat) / steps;
 	const lngDiff = (markerP2.getLatLng().lng - markerP1.getLatLng().lng) / steps;
 
+	var speed = getSpeed(markerP1, markerP2, duration);
+	updateText(`${speed} км/г`);
 	let currentStep = 0;
 
-	const interval = setInterval(() => {
+	interval = setInterval(() => {
 		if (currentStep <= steps) {
-
 			const newLat = markerCoordinates.lat + latDiff * currentStep;
 			const newLng = markerCoordinates.lng + lngDiff * currentStep;
 
 			markerP1.setLatLng([newLat, newLng]);
+			markerText.setLatLng([newLat, newLng]);
 			polyline.addLatLng(markerP1.getLatLng());
-			currentStep++;
-			isMoving = true;
 
+			if(currentStep%20 == 0){
+				sendCurrentPosition(markerP1);
+			}
+			
+			currentStep++;
 		} else {
-			clearInterval(interval); // Stop the interval when the movement is complete
-			markerCoordinates = markerP1.getLatLng(); // Update the markerCoordinates at the end
-			markerP2.setIcon(customMarkerIcon);
-			isMoving = false;
+			stopMoving();
+
 		}
 	}, duration / steps);
-}
-
-function animateMarkerAlongPolyline(marker, polyline) {
-	const latLngs = polyline.getLatLngs();
-	const duration = 5000; // Animation duration in milliseconds
-	const steps = 100; // Number of steps for the animation
-
-	const latDiff = (latLngs[1].lat - latLngs[0].lat) / steps;
-	const lngDiff = (latLngs[1].lng - latLngs[0].lng) / steps;
-
-	let currentStep = 0;
-	const interval = setInterval(() => {
-		if (currentStep <= steps) {
-		const newLat = latLngs[0].lat + latDiff * currentStep;
-		const newLng = latLngs[0].lng + lngDiff * currentStep;
-
-		marker.setLatLng([newLat, newLng]);
-			currentStep++;
-			
-		} else {
-			clearInterval(interval); // Stop the interval when the movement is complete
-			markerCoordinates = marker.getLatLng(); // Update the markerCoordinates at the end
-		}
-}, duration / steps);
-
-	marker.setIcon(carIcon);
-
-	marker.on('moveend', function () {
-		polyline.addLatLng(marker.getLatLng());
-		
-	});
-
 }
 
 map.on("draw:edited", function (e) {
@@ -397,6 +430,38 @@ document.getElementById('staticBackdropLoad').addEventListener('hidden.bs.modal'
 	updatePolygonTable();
 });
 
+
+function sendCurrentPosition(position) {
+	// Create the data object
+	var data = {
+	lat: position.getLatLng().lat,
+	lng: position.getLatLng().lng
+	};
+
+	// Create a new AJAX request
+	var xhr = new XMLHttpRequest();
+
+	// Configure the request
+	xhr.open('POST', '/get-coordinates', true);
+	xhr.setRequestHeader('Content-Type', 'application/json');
+
+	// Success handler
+	xhr.onload = function () {
+	if (xhr.status === 200) {
+		console.log('Координати отправлены');
+	} else {
+		console.log('Ошибка отправки координат');
+	}
+	};
+
+	// Error handler
+	xhr.onerror = function () {
+		console.log('Произошла ошибка при отправке запроса.');
+	};
+
+	// Send the data to the server
+	xhr.send(JSON.stringify(data));
+}
 
 //-------------------------------LOCAL SAVE---------------------------------------------------------
 function saveLayersToServer(layer) {
