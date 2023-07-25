@@ -4,10 +4,10 @@ import json
 import os
 
 import serial
-import schedule
 import time
 from datetime import datetime
 import pynmea2
+import re
 
 # Specify the file path and name
 folder_path = 'C:/RCB/Imitator'
@@ -15,7 +15,42 @@ folder_path = 'C:/RCB/Imitator'
 app = Flask(__name__)
 
 # Configure serial communication
-ser = serial.Serial('COM6', 9600)  # Replace 'COM1' with the appropriate COM port name
+ser = serial.Serial('COM1', 9600)  # Replace 'COM1' with the appropriate COM port name
+
+def calculate_checksum(sentence):
+    # Remove any newlines
+    if re.search("\n$", sentence):
+        sentence = sentence[:-1]
+
+    # Extract the data and checksum from the sentence
+    nmeadata, cksum = re.split('\*', sentence)
+
+    # Calculate the checksum
+    calc_cksum = 0
+    for s in nmeadata:
+        calc_cksum ^= ord(s)
+
+    # Convert the calculated checksum to a two-digit hexadecimal value
+    calculated_checksum = hex(calc_cksum)[2:].upper().zfill(2)
+
+    return cksum, calculated_checksum
+
+def checksum(sentence):
+
+    """ Remove any newlines """
+    if re.search("\n$", sentence):
+        sentence = sentence[:-1]
+
+    nmeadata,cksum = re.split('\*', sentence)
+
+    calc_cksum = 0
+    for s in nmeadata:
+        calc_cksum ^= ord(s)
+
+    """ Return the nmeadata, the checksum from
+        sentence, and the calculated checksum
+    """
+    return nmeadata,'0x'+cksum,hex(calc_cksum)
 
 def convert_to_dms(coordinate):
     degrees = int(coordinate)
@@ -23,7 +58,7 @@ def convert_to_dms(coordinate):
     minutes = int(minutes_float)
     seconds_float = (minutes_float - minutes) * 60
     seconds = int(seconds_float)
-    return (degrees, minutes, seconds)
+    return (degrees, minutes_float, seconds_float)
 
 # Function to send coordinates through the serial port using NMEA 0183 format
 def send_data(currentCoordinates):
@@ -43,11 +78,14 @@ def send_data(currentCoordinates):
     msg = pynmea2.GGA(
         'GP',
         'GGA',
-        ('000000.000', f'{lat_deg:02}{lat_min:02.3f}', lat_hemisphere, f'{lon_deg:03}{lon_min:02.3f}', lon_hemisphere, '1', '04', '2.6', '100.00', 'M', '-33.9', 'M', '', '0000')
+        ('123000.000', f'{lat_deg:02}{lat_min:03.6f}', lat_hemisphere, f'{lon_deg:03}{lon_min:03.6f}', lon_hemisphere, '1', '04', '2.6', '100.00', 'M', '-33.9', 'M', '', '')
     )
     nmea_sentence = str(msg)
     data = f"{nmea_sentence}\r\n"  # Add the necessary start and end characters
+
+    print(calculate_checksum(nmea_sentence))
     print(data)
+    
     ser.write(data.encode())  # Send the data as bytes
 
 
