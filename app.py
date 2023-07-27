@@ -15,7 +15,7 @@ folder_path = 'C:/RCB/Imitator'
 app = Flask(__name__)
 
 # Configure serial communication
-ser = serial.Serial('COM1', 9600)  # Replace 'COM1' with the appropriate COM port name
+ser = serial.Serial('COM6', 115200)  # Replace 'COM1' with the appropriate COM port name
 
 def calculate_checksum(sentence):
     # Remove any newlines
@@ -78,7 +78,7 @@ def send_data(currentCoordinates):
     msg = pynmea2.GGA(
         'GP',
         'GGA',
-        ('123000.000', f'{lat_deg:02}{lat_min:03.6f}', lat_hemisphere, f'{lon_deg:03}{lon_min:03.6f}', lon_hemisphere, '1', '04', '2.6', '100.00', 'M', '-33.9', 'M', '', '')
+        ('123000.000', f'{lat_deg:02}{lat_min:02.6f}', lat_hemisphere, f'{lon_deg:03}{lon_min:03.6f}', lon_hemisphere, '1', '17', '0.7', '238.2', 'M', '36.7', 'M', '', '')
     )
     nmea_sentence = str(msg)
     data = f"{nmea_sentence}\r\n"  # Add the necessary start and end characters
