@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 
 import json
 import os
@@ -13,6 +13,20 @@ import re
 folder_path = 'C:/RCB/Imitator'
 
 app = Flask(__name__)
+
+# Определяем корневую папку проекта
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Путь к папке с MBTiles файлами
+MBTILES_FOLDER = os.path.join(BASE_DIR, 'assets', 'map')
+
+
+@app.route('/mbtiles/<path:filename>')
+def mbtiles(filename):
+    # Проверяем, существует ли файл в указанной папке
+    if not os.path.exists(os.path.join(MBTILES_FOLDER, filename)):
+        print(f"Файл {filename} не найден в {MBTILES_FOLDER}")
+    return send_from_directory(MBTILES_FOLDER, filename)
 
 # Configure serial communication
 ser = serial.Serial('COM6', 115200)  # Replace 'COM1' with the appropriate COM port name

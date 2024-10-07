@@ -41,12 +41,26 @@ var markerCoordinates = [];
 // Initialize the map
 var map = L.map('map').setView([49.83754, 24.031219], 10);
 
-// Add the OpenStreetMap tiles
-var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-})
-osm.addTo(map);
+// Оффлайн слой MBTiles
+var offlineMapSatelite = L.tileLayer.mbTiles('/mbtiles/ua9.mbtiles', {
+    attribution: '© OpenStreetMap contributors'
+});
 
+// Онлайн слой OSM
+var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+});
+
+// Добавление контрола для переключения слоёв
+var baseLayers = {
+    "Offline Satelite": offlineMapSatelite,
+    "OpenStreetMap": osm
+};
+
+L.control.layers(baseLayers).addTo(map);
+
+// По умолчанию добавляем один из слоёв
+osm.addTo(map); // или offlineMap.addTo(map);
 // leaflet draw 
 var drawnFeatures = new L.FeatureGroup();
 map.addLayer(drawnFeatures);
@@ -181,9 +195,9 @@ function movingProcess(markerP1, markerP2) {
 			markerText.setLatLng([newLat, newLng]);
 			polyline.addLatLng(markerP1.getLatLng());
 
-			if(currentStep%20 == 0){
+			//if(currentStep%10 == 0){
 				sendCurrentPosition(markerP1);
-			}
+			//}
 			
 			currentStep++;
 		} else {
