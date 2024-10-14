@@ -51,9 +51,16 @@ var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
 });
 
+// Инициализация нестандартного пути для тайлов
+var customTileLayer = L.tileLayer('/tile/{z}/{x}/{y}.png', {
+    maxZoom: 12,
+    attribution: '© OpenStreetMap contributors'
+});
+
 // Добавление контрола для переключения слоёв
 var baseLayers = {
     "Offline Satelite": offlineMapSatelite,
+	"Offline tile" : customTileLayer,
     "OpenStreetMap": osm
 };
 
