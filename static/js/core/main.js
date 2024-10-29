@@ -7,6 +7,13 @@ var markerText = null;
 var polyline = null;
 var isMoving = false;
 
+var deviceData = {
+	PED: 0,
+	HNO: 0,
+	BIO: false
+}
+
+
 
 // Set a custom icon for the marker
 carIcon = L.icon({
@@ -202,9 +209,27 @@ function movingProcess(markerP1, markerP2) {
 			markerText.setLatLng([newLat, newLng]);
 			polyline.addLatLng(markerP1.getLatLng());
 
-			//if(currentStep%10 == 0){
+			if(currentStep%10 == 0){
 				sendCurrentPosition(markerP1);
-			//}
+			}
+
+			map.eachLayer(function(layer) {
+
+				if (layer instanceof L.Polygon) { 
+
+					if(layer.contains(markerP1.getLatLng())){
+
+
+						if(layer.options.name === "PED"){
+							deviceData.PED = layer.options.concentration;
+						}
+
+
+						sendDeviceData(JSON.stringify(deviceData))
+					}
+					
+				}
+			})
 			
 			currentStep++;
 		} else {
@@ -356,7 +381,12 @@ function saveChanges() {
 			props.name = type;
 			props.concentration = value;
 			props.color = newColor;
-			
+
+			// Сохраняем данные в options
+			layer.options.name = type;
+			layer.options.concentration = value;
+			layer.options.color = newColor;
+
 			layer.setStyle({ color: newColor });
 			layer.redraw();
 			layer.bindPopup(`<p>Тип небезпеки: ${type}<br>Концетрація: ${value}<br>${JSON.stringify(layer.toGeoJSON())}</p>`);
@@ -482,6 +512,36 @@ function sendCurrentPosition(position) {
 
 	// Send the data to the server
 	xhr.send(JSON.stringify(data));
+}
+
+function sendDeviceData(poligonData){
+	// Create the data object
+	
+		// Create a new AJAX request
+		var xhr = new XMLHttpRequest();
+	
+		// Configure the request
+		xhr.open('POST', '/get-deviceData', true);
+		xhr.setRequestHeader('Content-Type', 'application/json');
+	
+		// Success handler
+		xhr.onload = function () {
+		if (xhr.status === 200) {
+			console.log('Данные девайсов отправлены');
+		} else {
+			console.log('Ошибка отправки данных');
+		}
+		};
+	
+		// Error handler
+		xhr.onerror = function () {
+			console.log('Произошла ошибка при отправке запроса.');
+		};
+	
+		// Send the data to the server
+
+		console.log(poligonData);
+		xhr.send(poligonData);
 }
 
 //-------------------------------LOCAL SAVE---------------------------------------------------------

@@ -1,5 +1,4 @@
-from flask import Flask, render_template, jsonify, request, send_from_directory, logging
-from flask_cors import CORS
+from flask import Flask, render_template, jsonify, request, send_from_directory
 
 import json
 import os
@@ -14,7 +13,6 @@ import re
 folder_path = 'C:/RCB/Imitator'
 
 app = Flask(__name__)
-CORS(app)
 
 # Определяем корневую папку проекта
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -155,6 +153,27 @@ def get_coordinates():
         
         return jsonify(response), 500
         
+@app.route('/get-deviceData', methods = ['POST'])
+def getDeviceData():
+    try:
+
+        data = request.get_json()
+
+        # Логируем данные для проверки
+        print("Полученные данные:", data)
+        
+        # send data to COM add method here
+        response = {'message': 'Данные приняты и отправлены'}
+        
+        return jsonify(response), 200
+
+    except Exception as e:
+        # Вывод сообщения об ошибке в консоль или логи сервера
+        print('Ошибка при получении данных приборов', str(e))
+        
+        response = {'message': 'Ошибка отправки данных приборов.', 'error': str(e)}
+        
+        return jsonify(response), 500
 
 # Обработчик для сохранения слоев
 @app.route('/save-layers', methods=['POST'])
